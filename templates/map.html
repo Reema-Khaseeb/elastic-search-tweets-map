@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+   <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script> 
+    <link rel="stylesheet" href="./static/style.css">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+     integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+     crossorigin=""/>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+        integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+        crossorigin="">
+    </script>
+
+    <!-- <script src="./static/heatmap.js"></script>  -->
+    <!-- <script src="./static/leaflet-heatmap.js"></script>  -->
+    <script src="./static/leaflet-heat.js"></script>  <!-- -->
+    
+      <!--  -->
+      <!-- <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+      
+      <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+      <script src="../static/app.js"></script> -->
+      <!--  -->
+
+      
+      <!-- <style>
+        #map { height: 180px; }
+      </style> -->
+
+      <title>Tweets</title>
+   </head>
+   <body>
+      <h1 class='title'>Spatio-temporal analysis of a twitter Stream</h1>
+      
+      <div id="map"></div>
+
+
+        <script>
+            var map = L.map('map').setView([51.505, -0.09], 13);   // setView([latitude, longitude], ZoomLevel);
+
+            const attributionVar = { // attribution <Object type>
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            };
+            const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';   //'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            
+            // baseLayer
+            const tiles = L.tileLayer(tileUrl, attributionVar);
+            tiles.addTo(map);
+
+
+            var marker = L.marker([51.5, -0.09]).addTo(map)
+                .bindPopup('<b>Hello world!</b><br />I am a popup.').openPopup();
+
+            // marker.bindPopup("<b>Hello world!</b><br>I am a popup.").openPopup();
+
+            // var circle = L.circle([51.508, -0.11], {
+            //     color: 'red',
+            //     fillColor: '#f03',
+            //     fillOpacity: 0.5,
+            //     radius: 500
+            // }).addTo(map).bindPopup("I am a circle."); 
+            //circle.bindPopup("I am a circle.");
+
+            var polygon = L.polygon([
+                [51.509, -0.08],
+                [51.503, -0.06],
+                [51.51, -0.047]
+            ]).addTo(map).bindPopup('I am a polygon.');        
+            // polygon.bindPopup("I am a polygon.");
+
+
+            var popup = L.popup();
+
+
+
+            function onMapClick(e) {
+                popup
+                    .setLatLng(e.latlng)
+                    .setContent("You clicked the map at " + e.latlng.toString())
+                    .openOn(map);
+            }
+
+            map.on('click', onMapClick);
+        </script>
+
+
+        <!-- HTML form for submitting the query -->
+        <form id="form">
+            <!-- Input elements for the query parameters -->
+            <label for="text_form">Text:</label><br>
+            <input type="text" id="text_form" name="text_form">
+            <br><br>
+
+            <label for="start-date">Start Date:</label><br>
+            <input type="date" id="start-date" name="start-date"><br>
+
+            <label for="end-date">End Date:</label><br>
+            <input type="date" id="end-date" name="end-date">
+            <br><br>
+
+            <label for="coordinates">Coordinates:</label><br>
+            <input type="text" id="coor1" name="coor1">    
+            <input type="text" id="coor2" name="coor2">
+            <input type="text" id="coor3" name="coor3">
+            <input type="text" id="coor4" name="coor4">
+            <br><br>
+            <!-- Submit button -->
+            <button id = "submitButton" type="button">Submit</button>
+        </form>
+
+
+<script>
+let submitButton = $("#submitButton")[0]
+// add an event listener for the submit event
+submitButton.addEventListener('click', (event) => {
+  // Send a request to the FastAPI server
+  sendRequest();
+});
+
+
+async function sendRequest(){
+  // Get the query parameters from the form inputs
+  const inputText = $('#text_form')[0].value;
+  const startDate = $('#start-date')[0].value;
+  const endDate = $('#end-date')[0].value;
+  const coor1 = $('#coor1')[0].value;
+  const coor2 = $('#coor2')[0].value;
+  const coor3 = $('#coor3')[0].value;
+  const coor4 = $('#coor4')[0].value;
+
+  // send a GET request to the /get_form_input endpoint using the fetch function
+  await fetch('/get_form_input?'
+  + '&text_form=' +inputText
+  + '&start_date=' +startDate
+  + '&end_date=' +endDate
+  + '&coor1=' +coor1
+  + '&coor2=' +coor2
+  + '&coor3=' +coor3
+  + '&coor4=' +coor4
+  ).then(async(response)=>{
+    // Parse the JSON response
+    res = await response.json()
+    listCoordinates = res.score_source
+
+    // Utilize response data to create the heatmap using Leaflet
+  var heat = L.heatLayer(listCoordinates, {
+    // Set the visual properties of the heatmap
+    minOpacity: 0.5,
+    maxZoom: 18,
+    radius: 25,
+    blur: 15
+    // Add the heatmap to the Leaflet map
+  }).addTo(map);    
+})
+}
+</script>
+</body>
+</html>
